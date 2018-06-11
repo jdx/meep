@@ -46,11 +46,11 @@ export default class Dev extends Command {
 
   async run() {
     this.parse(Dev)
-    const toml: Meepfile = YML.safeLoad(await fs.readFile('Meepfile.yml', 'utf8'))
-    this.debug('toml:')
-    this.debug(toml)
+    const yml: Meepfile = YML.safeLoad(await fs.readFile('Meepfile.yml', 'utf8'))
+    this.debug('yml:')
+    this.debug(yml)
     // TODO: find a better way to not require sorting
-    const components = Object.entries(toml.components || {})
+    const components = Object.entries(yml.components || {})
     maxHeaderLength = _.max(components.map(([name]) => name.length)) || 0
     const procs = components.map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
