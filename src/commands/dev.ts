@@ -17,16 +17,15 @@ export interface Meepfile {
   component?: { [name: string]: Meepfile.Component }
 }
 export namespace Meepfile {
-  export interface Component {
-    type: 'static' | 'node'
-    command: string
-  }
+  export type Types = 'static' | 'node'
+  export type Component = {type: Types, command?: string} & ({
+    type: 'static'
+    spa?: boolean
+  } | {
+    type: 'node'
+  })
 }
 
-const DEFAULT_COMMANDS = {
-  node: 'npm start',
-  static: 'meep serve',
-}
 let port = 5000
 let colorIdx = 0
 let maxHeaderLength = 0
@@ -52,7 +51,7 @@ export default class Dev extends Command {
     this.debug(toml)
     // TODO: find a better way to not require sorting
     const components = Object.entries(toml.component || {})
-    maxHeaderLength = _.max(components.map(([name]) => name.length))
+    maxHeaderLength = _.max(components.map(([name]) => name.length)) || 0
     const procs = components.map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
   }
@@ -64,10 +63,22 @@ export default class Dev extends Command {
     const debug = Debug(`meep:${name}`)
     const root = path.join(process.cwd(), name)
     const header = getColor()(name.padEnd(maxHeaderLength))
-    c.type = await this.detect(name, c)
-    c.command = c.command || DEFAULT_COMMANDS[c.type]
-    debug(c.command)
-    const proc = execa.shell(c.command, {
+    let command = c.command
+    if (!command) {
+      switch (c.type) {
+        case 'node':
+          command = 'npm start'
+          break
+        case 'static':
+          if (c.spa) command = 'meep serve --spa'
+          else command = 'meep serve'
+          break
+        default:
+          throw new Error(`unexpected type: ${(c as any).type} on ${name}`)
+      }
+    }
+    debug(command)
+    const proc = execa.shell(command, {
       cwd: root,
       encoding: 'utf8',
       env,
@@ -89,12 +100,5 @@ export default class Dev extends Command {
     proc.on('close', code => this.log(`${header} exited with code ${code}`))
 
     return proc
-  }
-
-  private async detect(name: string, c: Meepfile.Component): Promise<keyof typeof DEFAULT_COMMANDS> {
-    if (c.type) return c.type
-    const root = path.join(process.cwd(), name)
-    if (await fs.pathExists(path.join(root, 'index.html'))) return 'static'
-    throw new Error(`unable to determine type of ${root}`)
   }
 }
