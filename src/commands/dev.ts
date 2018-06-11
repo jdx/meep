@@ -3,7 +3,11 @@ import * as execa from 'execa'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 
+import LineTransform from '../line_transform'
+import * as screen from '../screen'
+
 const Toml = require('toml')
+const wrapAnsi = require('wrap-ansi')
 
 export interface Meepfile {
   component?: {
@@ -22,12 +26,27 @@ export default class Dev extends Command {
     this.parse(Dev)
     const toml: Meepfile = Toml.parse(await fs.readFile('Meepfile.toml', 'utf8'))
     console.dir(toml)
-    for (let [name, component] of Object.entries(toml.component || {})) {
+    const procs = Object.entries(toml.component || {}).map(([name, c]) => {
       const cwd = path.join(process.cwd(), name)
-      await execa.shell(component.command, {
-        cwd,
-        stdio: 'inherit',
-      })
-    }
+      if (!c.command) throw new Error('undefined command')
+      const proc = execa.shell(c.command, {cwd, encoding: 'utf8'})
+
+      for (let stream of ['stdout', 'stderr'] as ('stdout' | 'stderr')[]) {
+        proc[stream]
+        .pipe(new LineTransform())
+        .setEncoding('utf8')
+        .on('data', output => {
+          let header = `${name}: `
+          let lines = wrapAnsi(output, screen[stream] - header.length, {
+            hard: true
+          }).split('\n').map((s: string) => [header, s].join(''))
+          if (!lines.length) return
+          process[stream].write(lines.join('\n') + '\n')
+        })
+      }
+
+      return proc
+    })
+    await Promise.all(procs)
   }
 }
