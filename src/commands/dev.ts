@@ -90,7 +90,7 @@ export default class Dev extends Command {
       .setEncoding('utf8')
       .on('data', output => {
         const maxWidth = screen[stream] || 120
-        let lines = wrapAnsi(output, maxWidth - stringWidth(header).length, {
+        let lines = wrapAnsi(output, maxWidth - stringWidth(header), {
           hard: true
         }).split('\n').map((s: string) => `${header} ${s}`)
         if (!lines.length) return
