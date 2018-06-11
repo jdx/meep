@@ -8,6 +8,7 @@ import * as screen from '../screen'
 
 const Toml = require('toml')
 const wrapAnsi = require('wrap-ansi')
+const Debug = require('debug')
 
 export interface Meepfile {
   component?: { [name: string]: Meepfile.Component }
@@ -24,6 +25,8 @@ const DEFAULT_COMMANDS = {
   static: 'meep serve',
 }
 
+let port = 5000
+
 export default class Dev extends Command {
   static flags = {
     help: flags.help({char: 'h'}),
@@ -32,17 +35,26 @@ export default class Dev extends Command {
   async run() {
     this.parse(Dev)
     const toml: Meepfile = Toml.parse(await fs.readFile('Meepfile.toml', 'utf8'))
-    console.dir(toml)
+    this.debug('toml:')
+    this.debug(toml)
     const procs = Object.entries(toml.component || {})
     .map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
   }
 
   private async start(name: string, c: Meepfile.Component) {
+    const debug = Debug(`meep:${name}`)
     const root = path.join(process.cwd(), name)
     c.type = await this.detect(name, c)
     c.command = c.command || DEFAULT_COMMANDS[c.type]
-    const proc = execa.shell(c.command, {cwd: root, encoding: 'utf8'})
+    debug(c.command)
+    const proc = execa.shell(c.command, {
+      cwd: root,
+      encoding: 'utf8',
+      env: {
+        PORT: (port++).toString()
+      }
+    })
 
     for (let stream of ['stdout', 'stderr'] as ('stdout' | 'stderr')[]) {
       proc[stream]
