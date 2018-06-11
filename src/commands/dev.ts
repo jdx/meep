@@ -1,6 +1,8 @@
 import {Command, flags} from '@oclif/command'
+import chalk from 'chalk'
 import * as execa from 'execa'
 import * as fs from 'fs-extra'
+import * as _ from 'lodash'
 import * as path from 'path'
 
 import LineTransform from '../line_transform'
@@ -9,6 +11,7 @@ import * as screen from '../screen'
 const Toml = require('toml')
 const wrapAnsi = require('wrap-ansi')
 const Debug = require('debug')
+const stringWidth = require('string-width')
 
 export interface Meepfile {
   component?: { [name: string]: Meepfile.Component }
@@ -25,6 +28,17 @@ const DEFAULT_COMMANDS = {
   static: 'meep serve',
 }
 let port = 5000
+let colorIdx = 0
+let maxHeaderLength = 0
+
+function getColor(): typeof chalk {
+  const color = ['blueBright', 'greenBright'][colorIdx++] as keyof typeof chalk
+  if (!color) {
+    colorIdx = 0
+    return getColor()
+  }
+  return chalk[color] as any
+}
 
 export default class Dev extends Command {
   static flags = {
@@ -37,8 +51,9 @@ export default class Dev extends Command {
     this.debug('toml:')
     this.debug(toml)
     // TODO: find a better way to not require sorting
-    const procs = Object.entries(toml.component || {})
-    .map(([name, c]) => this.start(name, c))
+    const components = Object.entries(toml.component || {})
+    maxHeaderLength = _.max(components.map(([name]) => name.length))
+    const procs = components.map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
   }
 
@@ -48,7 +63,7 @@ export default class Dev extends Command {
     }
     const debug = Debug(`meep:${name}`)
     const root = path.join(process.cwd(), name)
-    const header = `${name}: `
+    const header = getColor()(name.padEnd(maxHeaderLength))
     c.type = await this.detect(name, c)
     c.command = c.command || DEFAULT_COMMANDS[c.type]
     debug(c.command)
@@ -64,14 +79,14 @@ export default class Dev extends Command {
       .setEncoding('utf8')
       .on('data', output => {
         const maxWidth = screen[stream] || 120
-        let lines = wrapAnsi(output, maxWidth - header.length, {
+        let lines = wrapAnsi(output, maxWidth - stringWidth(header).length, {
           hard: true
-        }).split('\n').map((s: string) => [header, s].join(''))
+        }).split('\n').map((s: string) => `${header} ${s}`)
         if (!lines.length) return
         process[stream].write(lines.join('\n') + '\n')
       })
     }
-    proc.on('close', code => this.log(`${header}exited with code ${code}`))
+    proc.on('close', code => this.log(`${header} exited with code ${code}`))
 
     return proc
   }
