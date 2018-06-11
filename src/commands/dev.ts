@@ -24,7 +24,6 @@ const DEFAULT_COMMANDS = {
   node: 'npm start',
   static: 'meep serve',
 }
-
 let port = 5000
 
 export default class Dev extends Command {
@@ -37,12 +36,16 @@ export default class Dev extends Command {
     const toml: Meepfile = Toml.parse(await fs.readFile('Meepfile.toml', 'utf8'))
     this.debug('toml:')
     this.debug(toml)
+    // TODO: find a better way to not require sorting
     const procs = Object.entries(toml.component || {})
     .map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
   }
 
   private async start(name: string, c: Meepfile.Component) {
+    const env = {
+      PORT: (port++).toString()
+    }
     const debug = Debug(`meep:${name}`)
     const root = path.join(process.cwd(), name)
     const header = `${name}: `
@@ -52,9 +55,7 @@ export default class Dev extends Command {
     const proc = execa.shell(c.command, {
       cwd: root,
       encoding: 'utf8',
-      env: {
-        PORT: (port++).toString()
-      }
+      env,
     })
 
     for (let stream of ['stdout', 'stderr'] as ('stdout' | 'stderr')[]) {
