@@ -14,8 +14,14 @@ export interface Meepfile {
 }
 export namespace Meepfile {
   export interface Component {
-    command?: string
+    type: 'static' | 'node'
+    command: string
   }
+}
+
+const DEFAULT_COMMANDS = {
+  node: 'npm start',
+  static: 'meep serve',
 }
 
 export default class Dev extends Command {
@@ -28,14 +34,15 @@ export default class Dev extends Command {
     const toml: Meepfile = Toml.parse(await fs.readFile('Meepfile.toml', 'utf8'))
     console.dir(toml)
     const procs = Object.entries(toml.component || {})
-    .map(([name, c]) => this.startProc(name, c))
+    .map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
   }
 
-  private startProc(name: string, c: Meepfile.Component) {
-    const cwd = path.join(process.cwd(), name)
-    if (!c.command) throw new Error('undefined command')
-    const proc = execa.shell(c.command, {cwd, encoding: 'utf8'})
+  private async start(name: string, c: Meepfile.Component) {
+    const root = path.join(process.cwd(), name)
+    c.type = await this.detect(name, c)
+    c.command = c.command || DEFAULT_COMMANDS[c.type]
+    const proc = execa.shell(c.command, {cwd: root, encoding: 'utf8'})
 
     for (let stream of ['stdout', 'stderr'] as ('stdout' | 'stderr')[]) {
       proc[stream]
@@ -53,5 +60,12 @@ export default class Dev extends Command {
     }
 
     return proc
+  }
+
+  private async detect(name: string, c: Meepfile.Component): Promise<keyof typeof DEFAULT_COMMANDS> {
+    if (c.type) return c.type
+    const root = path.join(process.cwd(), name)
+    if (await fs.pathExists(path.join(root, 'index.html'))) return 'static'
+    throw new Error(`unable to determine type of ${root}`)
   }
 }
