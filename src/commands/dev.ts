@@ -8,13 +8,13 @@ import * as path from 'path'
 import LineTransform from '../line_transform'
 import * as screen from '../screen'
 
-const Toml = require('toml')
+const YML = require('js-yaml')
 const wrapAnsi = require('wrap-ansi')
 const Debug = require('debug')
 const stringWidth = require('string-width')
 
 export interface Meepfile {
-  component?: { [name: string]: Meepfile.Component }
+  components?: { [name: string]: Meepfile.Component }
 }
 export namespace Meepfile {
   export type Types = 'static' | 'node'
@@ -46,11 +46,11 @@ export default class Dev extends Command {
 
   async run() {
     this.parse(Dev)
-    const toml: Meepfile = Toml.parse(await fs.readFile('Meepfile.toml', 'utf8'))
+    const toml: Meepfile = YML.safeLoad(await fs.readFile('Meepfile.yml', 'utf8'))
     this.debug('toml:')
     this.debug(toml)
     // TODO: find a better way to not require sorting
-    const components = Object.entries(toml.component || {})
+    const components = Object.entries(toml.components || {})
     maxHeaderLength = _.max(components.map(([name]) => name.length)) || 0
     const procs = components.map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
