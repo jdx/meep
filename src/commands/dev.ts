@@ -45,6 +45,7 @@ export default class Dev extends Command {
   private async start(name: string, c: Meepfile.Component) {
     const debug = Debug(`meep:${name}`)
     const root = path.join(process.cwd(), name)
+    const header = `${name}: `
     c.type = await this.detect(name, c)
     c.command = c.command || DEFAULT_COMMANDS[c.type]
     debug(c.command)
@@ -61,7 +62,6 @@ export default class Dev extends Command {
       .pipe(new LineTransform())
       .setEncoding('utf8')
       .on('data', output => {
-        let header = `${name}: `
         const maxWidth = screen[stream] || 120
         let lines = wrapAnsi(output, maxWidth - header.length, {
           hard: true
@@ -70,6 +70,7 @@ export default class Dev extends Command {
         process[stream].write(lines.join('\n') + '\n')
       })
     }
+    proc.on('close', code => this.log(`${header}exited with code ${code}`))
 
     return proc
   }
