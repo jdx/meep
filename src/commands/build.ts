@@ -3,12 +3,17 @@ import {Command, flags} from '@oclif/command'
 export default class Serve extends Command {
   static hidden = true
 
+  static args = [
+    {name: 'buildDir', required: true},
+    {name: 'cacheDir', required: true},
+  ]
+
   static flags = {
-    spa: flags.boolean(),
+    help: flags.help({char: 'h'}),
   }
 
   async run() {
-    this.parse(Serve)
-    console.log('whoa bro')
+    const {args} = this.parse(Serve)
+    console.dir(args)
   }
 }
