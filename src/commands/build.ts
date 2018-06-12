@@ -29,6 +29,7 @@ export default class Build extends Command {
   async run() {
     const {args} = this.parse(Build)
     const env = await this.buildEnv(args.envDir)
+    console.dir(env)
     if (env.DEBUG) process.env.DEBUG = env.DEBUG
     const yml = await Meepfile.load(args.buildDir)
     let idx = 0
