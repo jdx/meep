@@ -39,7 +39,8 @@ export default class Build extends Command {
     if (env.DEBUG) process.env.DEBUG = env.DEBUG
     const yml = await Meepfile.load(args.buildDir)
     let idx = 0
-    const procfile = await Procfile.load(args.buildDir)
+    // const procfile = await Procfile.load(args.buildDir)
+    const procfile: Procfile.File = {}
     for (let [name, c] of Object.entries(yml.components)) {
       const buildDir = path.join(args.buildDir, name)
       idx++
@@ -56,7 +57,7 @@ export default class Build extends Command {
 
       const release: Release = YML.safeLoad(await qq.x.stdout(`./${buildpackID}/bin/release`, [buildDir, args.cacheDir, args.envDir]))
       for (let [type, cmd] of Object.entries(release.default_process_types || {})) {
-        procfile[type] = procfile[type] || `cd ${name} && ${cmd}`
+        procfile[type] = c.command || `cd ${name} && ${cmd}`
       }
       await Procfile.save(args.buildDir, procfile)
     }
