@@ -1,30 +1,16 @@
 import {Command, flags} from '@oclif/command'
 import chalk from 'chalk'
 import * as execa from 'execa'
-import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
 
 import LineTransform from '../line_transform'
+import * as Meepfile from '../meepfile'
 import * as screen from '../screen'
 
-const YML = require('js-yaml')
 const wrapAnsi = require('wrap-ansi')
 const Debug = require('debug')
 const stringWidth = require('string-width')
-
-export interface Meepfile {
-  components?: { [name: string]: Meepfile.Component }
-}
-export namespace Meepfile {
-  export type Types = 'static' | 'node'
-  export type Component = {type: Types, command?: string} & ({
-    type: 'static'
-    spa?: boolean
-  } | {
-    type: 'node'
-  })
-}
 
 let port = 5000
 let colorIdx = 0
@@ -46,11 +32,8 @@ export default class Dev extends Command {
 
   async run() {
     this.parse(Dev)
-    const yml: Meepfile = YML.safeLoad(await fs.readFile('Meepfile.yml', 'utf8'))
-    this.debug('yml:')
-    this.debug(yml)
-    // TODO: find a better way to not require sorting
-    const components = Object.entries(yml.components || {})
+    const yml = await Meepfile.load()
+    const components = Object.entries(yml.components)
     maxHeaderLength = _.max(components.map(([name]) => name.length)) || 0
     const procs = components.map(([name, c]) => this.start(name, c))
     await Promise.all(procs)
@@ -65,7 +48,7 @@ export default class Dev extends Command {
     const header = getColor()(name.padEnd(maxHeaderLength))
     let command = c.command
     if (!command) {
-      switch (c.type) {
+      switch (c.buildpack) {
         case 'node':
           command = 'npm start'
           break
