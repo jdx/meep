@@ -34,7 +34,7 @@ export default class Build extends Command {
       if (await qq.exists([buildDir, '.profile.d'])) {
         await qq.mkdirp(profileD)
         for (let script of await qq.ls([buildDir, '.profile.d'])) {
-          await qq.mv(script, profileD)
+          await qq.mv([buildDir, '.profile.d', script], profileD)
         }
         await qq.rm([buildDir, '.profile.d'])
       }
