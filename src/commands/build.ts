@@ -10,6 +10,7 @@ export default class Build extends Command {
   static args = [
     {name: 'buildDir', required: true},
     {name: 'cacheDir', required: true},
+    {name: 'envDir', required: true},
   ]
 
   static flags = {
@@ -26,9 +27,9 @@ export default class Build extends Command {
       const buildpackID = `${idx}-${path.basename(c.buildpack)}`
       await qq.rm(buildpackID)
       await qq.x(`git clone ${c.buildpack} ${buildpackID}`)
-      const detect = await qq.x.stdout(`./${buildpackID}/bin/detect`, [buildDir, args.cacheDir])
+      const detect = await qq.x.stdout(`./${buildpackID}/bin/detect`, [buildDir, args.cacheDir, args.envDir])
       if (!detect) throw new Error('detect returned nothing')
-      await qq.x(`./${buildpackID}/bin/compile`, [buildDir, args.cacheDir])
+      await qq.x(`./${buildpackID}/bin/compile`, [buildDir, args.cacheDir, args.envDir])
     }
   }
 }
