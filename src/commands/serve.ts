@@ -20,7 +20,7 @@ export default class Serve extends Command {
 
     if (spa) {
       app.get('*', (_, res) => {
-        res.sendfile('index.html')
+        res.sendFile('index.html')
       })
     }
 
