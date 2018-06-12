@@ -1,5 +1,5 @@
 {
-  "name": "@meep/cli",
+  "name": "meep-cli",
   "description": "meep CLI",
   "version": "0.0.0",
   "author": "Jeff Dickey @jdxcode",

@@ -18,11 +18,11 @@ meep CLI
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g @meep/cli
+$ npm install -g meep-cli
 $ meep COMMAND
 running command...
 $ meep (-v|--version|version)
-@meep/cli/0.0.0 darwin-x64 node-v10.4.0
+meep-cli/0.0.0 darwin-x64 node-v8.11.2
 $ meep --help [COMMAND]
 USAGE
   $ meep COMMAND
@@ -31,28 +31,21 @@ USAGE
 <!-- usagestop -->
 # Commands
 <!-- commands -->
-* [`meep hello [FILE]`](#meep-hello-file)
+* [`meep dev`](#meep-dev)
 * [`meep help [COMMAND]`](#meep-help-command)
+* [`meep serve`](#meep-serve)
 
-## `meep hello [FILE]`
-
-describe the command here
+## `meep dev`
 
 ```
 USAGE
-  $ meep hello [FILE]
+  $ meep dev
 
 OPTIONS
-  -f, --force
-  -h, --help       show CLI help
-  -n, --name=name  name to print
-
-EXAMPLE
-  $ meep hello
-  hello world from ./src/hello.ts!
+  -h, --help  show CLI help
 ```
 
-_See code: [src/commands/hello.ts](https://github.com/jdxcode/meep-cli/blob/v0.0.0/src/commands/hello.ts)_
+_See code: [src/commands/dev.ts](https://github.com/jdxcode/meep-cli/blob/v0.0.0/src/commands/dev.ts)_
 
 ## `meep help [COMMAND]`
 
@@ -70,4 +63,17 @@ OPTIONS
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.0.5/src/commands/help.ts)_
+
+## `meep serve`
+
+```
+USAGE
+  $ meep serve
+
+OPTIONS
+  -h, --help  show CLI help
+  --spa
+```
+
+_See code: [src/commands/serve.ts](https://github.com/jdxcode/meep-cli/blob/v0.0.0/src/commands/serve.ts)_
 <!-- commandsstop -->
