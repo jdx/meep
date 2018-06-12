@@ -18,5 +18,5 @@ export async function save(root: string, procfile: File) {
   const file = path.join(root, 'Procfile')
   if (Object.entries(procfile).length === 0) return
   const body = Object.entries(procfile).map(([type, cmd]) => `${type}: ${cmd}`).join('\n')
-  await fs.writeFile(file, body)
+  await fs.writeFile(file, body + '\n')
 }
