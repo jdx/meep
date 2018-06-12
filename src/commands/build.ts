@@ -3,6 +3,13 @@ import * as path from 'path'
 import * as qq from 'qqjs'
 
 import * as Meepfile from '../meepfile'
+import * as Procfile from '../procfile'
+
+const YML = require('js-yaml')
+
+export interface Release {
+  default_process_types?: string
+}
 
 async function mergeDirs(from: string, to: string) {
   if (!await qq.exists(from)) return
@@ -29,22 +36,29 @@ export default class Build extends Command {
   async run() {
     const {args} = this.parse(Build)
     const env = await this.buildEnv(args.envDir)
-    console.dir(env)
     if (env.DEBUG) process.env.DEBUG = env.DEBUG
     const yml = await Meepfile.load(args.buildDir)
     let idx = 0
+    const procfile = await Procfile.load(args.buildDir)
     for (let [name, c] of Object.entries(yml.components)) {
       const buildDir = path.join(args.buildDir, name)
       idx++
       const buildpackID = `${idx}-${path.basename(c.buildpack)}`
       await qq.rm(buildpackID)
       await qq.x(`git clone ${c.buildpack} ${buildpackID}`)
+
       const detect = await qq.x.stdout(`./${buildpackID}/bin/detect`, [buildDir, args.cacheDir, args.envDir])
       if (!detect) throw new Error('detect returned nothing')
+
       await qq.x(`./${buildpackID}/bin/compile`, [buildDir, args.cacheDir, args.envDir])
       await mergeDirs(path.join(buildDir, '.profile.d'), path.join(args.buildDir, '.profile.d'))
       await mergeDirs(path.join(buildDir, '.heroku'), path.join(args.buildDir, '.heroku'))
-      await qq.x(`./${buildpackID}/bin/release`, [buildDir, args.cacheDir, args.envDir])
+
+      const release: Release = YML.safeLoad(await qq.x.stdout(`./${buildpackID}/bin/release`, [buildDir, args.cacheDir, args.envDir]))
+      for (let [type, cmd] of Object.entries(release.default_process_types || {})) {
+        procfile[type] = procfile[type] || cmd
+      }
+      await Procfile.save(args.buildDir, procfile)
     }
   }
 
