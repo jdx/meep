@@ -56,7 +56,7 @@ export default class Build extends Command {
 
       const release: Release = YML.safeLoad(await qq.x.stdout(`./${buildpackID}/bin/release`, [buildDir, args.cacheDir, args.envDir]))
       for (let [type, cmd] of Object.entries(release.default_process_types || {})) {
-        procfile[type] = procfile[type] || cmd
+        procfile[type] = procfile[type] || `cd ${name} && ${cmd}`
       }
       await Procfile.save(args.buildDir, procfile)
     }
