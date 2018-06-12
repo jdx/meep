@@ -21,6 +21,7 @@ export default class Build extends Command {
     const {args} = this.parse(Build)
     const yml = await Meepfile.load(args.buildDir)
     let idx = 0
+    const profileD = path.join(args.buildDir, '.profile.d')
     for (let [name, c] of Object.entries(yml.components)) {
       const buildDir = path.join(args.buildDir, name)
       idx++
@@ -30,6 +31,13 @@ export default class Build extends Command {
       const detect = await qq.x.stdout(`./${buildpackID}/bin/detect`, [buildDir, args.cacheDir, args.envDir])
       if (!detect) throw new Error('detect returned nothing')
       await qq.x(`./${buildpackID}/bin/compile`, [buildDir, args.cacheDir, args.envDir])
+      if (await qq.exists([buildDir, '.profile.d'])) {
+        await qq.mkdirp(profileD)
+        for (let script of await qq.ls([buildDir, '.profile.d'])) {
+          await qq.mv(script, profileD)
+        }
+        await qq.rm([buildDir, '.profile.d'])
+      }
     }
   }
 }
