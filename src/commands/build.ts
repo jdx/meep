@@ -5,7 +5,7 @@ import {Meepfile} from './dev'
 
 const YML = require('js-yaml')
 
-export default class Serve extends Command {
+export default class Build extends Command {
   static hidden = true
 
   static args = [
@@ -18,7 +18,8 @@ export default class Serve extends Command {
   }
 
   async run() {
-    const {args} = this.parse(Serve)
+    const {args} = this.parse(Build)
+    process.chdir(args.buildDir)
     const yml: Meepfile = YML.safeLoad(await fs.readFile('Meepfile.yml', 'utf8'))
     this.debug('yml:')
     this.debug(yml)
